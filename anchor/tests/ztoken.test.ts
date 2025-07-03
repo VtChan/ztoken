@@ -38,6 +38,9 @@ describe('ztoken', () => {
   const tokenMetadata = Keypair.generate();
   const amount = new BN(1000);
 
+  // recipient
+  const recipient = Keypair.generate();
+
   async function createMintFixture() {
     
     // Create instruction data with valid parameters
@@ -139,6 +142,121 @@ describe('ztoken', () => {
   });
 
   it("should close the ata", async() => {
+    const ata = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      payer.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+    );
+
+    // make sure the ata exist
+    await program.methods
+      .createOrGetAta()
+      .accounts({
+        payer: payer.publicKey,
+        user: payer.publicKey,
+        mint: mintAccount.publicKey,
+        userAta: ata,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: SYSVAR_RENT_PUBKEY,
+      })
+      .rpc();
     
+    // close ata
+    await program.methods
+      .closeAta()
+      .accounts({
+        user: payer.publicKey,
+        userAta: ata,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .rpc();
+    
+    // make sure the ata is closed
+    let closed = false;
+
+    try {
+      await getAccount(connection, ata)
+    } catch (e) {
+      closed = true;
+    }
+    expect(closed).toBeTruthy();
+  });
+
+  it("should tranfer successful", async() => {
+    
+
+    const recipient_ata = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      recipient.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+    );
+
+    // create ATA for recipient pay by payer
+    await program.methods
+      .createOrGetAta()
+      .accounts({
+        payer: payer.publicKey,
+        user: recipient.publicKey,
+        mint: mintAccount.publicKey,
+        userAta: recipient_ata,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: SYSVAR_RENT_PUBKEY,
+      })
+      .rpc();
+
+    // payer tranfer to recipient
+    const transferAmount = new BN(100);
+    await program.methods
+      .transfer(transferAmount)
+      .accounts({
+        fromAuthority: payer.publicKey,
+        fromAta: tokenAccount.publicKey,
+        toAta: recipient_ata,
+        mint: mintAccount.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([])
+      .rpc();
+    
+    // check balance 
+    const payerAtaInfo = await getAccount(connection, tokenAccount.publicKey);
+    const recipientAtaInfo = await getAccount(connection, recipient_ata);
+    expect(payerAtaInfo.amount.toString()).toEqual(amount.sub(transferAmount).toString());
+    expect(recipientAtaInfo.amount.toString()).toEqual(transferAmount.toString());
+  });
+
+  it("should can not transfer if insufficient funds", async() => {
+    const recipient_ata = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      recipient.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+    );
+    let failed = false;
+    let transferAmount = new BN(1_000_000)
+    try {
+      await program.methods
+        .transfer(transferAmount) // over balance
+        .accounts({
+          fromAuthority: payer.publicKey,
+          fromAta: tokenAccount.publicKey,
+          toAta: recipient_ata,
+          mint: mintAccount.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([])
+        .rpc();
+    } catch (e) {
+      failed = true;
+      // e.message should include:Insufficient funds for transfer
+      console.log("transfer fail:\n", e.message);
+    }
+    expect(failed).toBeTruthy();
   });
 })

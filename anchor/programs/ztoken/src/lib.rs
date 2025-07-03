@@ -87,6 +87,27 @@ pub mod ztoken {
 
         Ok(())
     }
+
+    pub fn transfer(ctx: Context<Transfer>, amount: u64) -> Result<()> {
+        // check insufficient fund
+        let from_ata = &ctx.accounts.from_ata;
+        require!(from_ata.amount >= amount, ErrorCode::InsufficientFunds);
+
+        // transfer
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: ctx.accounts.from_ata.to_account_info(),
+                    to: ctx.accounts.to_ata.to_account_info(),
+                    authority: ctx.accounts.from_authority.to_account_info(),
+                }
+            ),
+            amount,
+        )?;
+
+        Ok(())
+    }
 }
 #[account]
 #[derive(InitSpace)]
@@ -193,4 +214,26 @@ pub struct CloseAta<'info> {
 
     pub token_program: Program<'info, Token>,
 
+}
+
+#[derive(Accounts)]
+pub struct Transfer<'info> {
+    #[account(mut)]
+    pub from_authority: Signer<'info>,
+
+    #[account(mut, has_one = mint)]
+    pub from_ata: Account<'info, TokenAccount>,
+
+    #[account(mut, has_one = mint)]
+    pub to_ata: Account<'info, TokenAccount>,
+
+    pub mint: Account<'info, Mint>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Insufficient funds for transfer")]
+    InsufficientFunds,
 }
