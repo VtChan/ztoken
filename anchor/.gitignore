@@ -2,6 +2,9 @@
 .DS_Store
 target/debug
 target/deploy
+target/rust-analyzer
+target/idl
+target/types
 target/release
 target/sbf-solana-solana
 target/test-ledger

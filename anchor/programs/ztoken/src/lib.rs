@@ -94,6 +94,9 @@ pub mod ztoken {
         let from_ata = &ctx.accounts.from_ata;
         require!(from_ata.amount >= amount, ErrorCode::InsufficientFunds);
 
+        // frozen check
+        require!(!ctx.accounts.frozen_account.is_frozen, ErrorCode::AccountFrozen);
+
         // transfer
         token::transfer(
             CpiContext::new(
@@ -133,6 +136,18 @@ pub mod ztoken {
     }
 
 
+    // frozen account can not transfer
+    pub fn freeze_account(ctx: Context<FreezeAccount>) -> Result<()> {
+        let frozen = &mut ctx.accounts.frozen_account;
+        frozen.is_frozen = true;
+        Ok(())
+    }
+    pub fn unfreeze_account(ctx: Context<FreezeAccount>) -> Result<()> {
+        let frozen = &mut ctx.accounts.frozen_account;
+        frozen.is_frozen = false;
+        Ok(())
+    }
+
 }
 #[account]
 #[derive(InitSpace)]
@@ -140,7 +155,12 @@ pub struct Ztoken {
     pub count: u8
 }
 
-
+#[account]
+#[derive(InitSpace)]
+pub struct FrozenAccount {
+    pub account: Pubkey,
+    pub is_frozen: bool,
+}
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -255,6 +275,12 @@ pub struct Transfer<'info> {
     pub mint: Account<'info, Mint>,
 
     pub token_program: Program<'info, Token>,
+
+    #[account(
+        seeds = [b"frozen", from_ata.key().as_ref()],
+        bump,
+    )]
+    pub frozen_account: Account<'info, FrozenAccount>,
 }
 
 #[error_code]
@@ -263,6 +289,8 @@ pub enum ErrorCode {
     InsufficientFunds,
     #[msg("Unauthorized")]
     Unauthorized,
+    #[msg("Account is frozen")]
+    AccountFrozen,
 }
 
 #[derive(Accounts)]
@@ -279,4 +307,26 @@ pub struct MintTo<'info> {
 
     pub token_metadata: Account<'info, TokenMetadata>,
 
+}
+
+#[derive(Accounts)]
+pub struct FreezeAccount<'info> {
+
+    // authority has the right to freeze
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    #[account(
+        init_if_needed,
+        payer = authority,
+        seeds = [b"frozen", account_to_freeze.key().as_ref()],
+        bump,
+        space = 8 + FrozenAccount::INIT_SPACE,
+    )]
+    pub frozen_account: Account<'info, FrozenAccount>,
+
+    /// CHECK: The TokenAccount need to be frozen
+    pub account_to_freeze: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
 }
