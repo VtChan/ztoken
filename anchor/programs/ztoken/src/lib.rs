@@ -95,7 +95,9 @@ pub mod ztoken {
         require!(from_ata.amount >= amount, ErrorCode::InsufficientFunds);
 
         // frozen check
-        require!(!ctx.accounts.frozen_account.is_frozen, ErrorCode::AccountFrozen);
+        if let Some(frozen) = &ctx.accounts.frozen_account {
+            require!(!frozen.is_frozen, ErrorCode::AccountFrozen);
+        }
 
         // transfer
         token::transfer(
@@ -276,11 +278,7 @@ pub struct Transfer<'info> {
 
     pub token_program: Program<'info, Token>,
 
-    #[account(
-        seeds = [b"frozen", from_ata.key().as_ref()],
-        bump,
-    )]
-    pub frozen_account: Account<'info, FrozenAccount>,
+    pub frozen_account: Option<Account<'info, FrozenAccount>>,
 }
 
 #[error_code]

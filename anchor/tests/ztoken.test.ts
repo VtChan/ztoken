@@ -220,6 +220,7 @@ describe('ztoken', () => {
         toAta: recipient_ata,
         mint: mintAccount.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
+        frozenAccount: null,
       })
       .signers([])
       .rpc();
@@ -287,5 +288,105 @@ describe('ztoken', () => {
       expect(e.message).toContain("Unauthorized");
     }
     expect(failed).toBeTruthy();
+  });
+
+  it("should now allow transfer from frozen account", async() => {
+    const recipient_ata = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      recipient.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+    );
+    // a recipient
+    const recipient2 = Keypair.generate();
+    const recipient2_ata = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      recipient2.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+    );
+
+    await program.methods
+      .createOrGetAta()
+      .accounts({
+        payer: payer.publicKey,
+        user: recipient2.publicKey,
+        mint: mintAccount.publicKey,
+        userAta: recipient2_ata,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: SYSVAR_RENT_PUBKEY,
+      })
+      .rpc();
+
+    // freeze account
+    const [frozenAccountPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("frozen"), recipient.publicKey.toBuffer()],
+      program.programId
+    );
+
+    await program.methods
+      .freezeAccount()
+      .accounts({
+        authority: payer.publicKey,
+        frozenAccount: frozenAccountPda,
+        accountToFreeze: recipient.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([payer])
+      .rpc();
+    
+    // try to transfer, it should fail
+    let failed = false;
+    const transferAmount = new BN(10);
+    try {
+      await program.methods
+        .transfer(transferAmount)
+        .accounts({
+          fromAuthority: recipient.publicKey,
+          fromAta: recipient_ata,
+          toAta: recipient2_ata,
+          mint: mintAccount.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          frozenAccount: frozenAccountPda,
+        })
+        .signers([recipient])
+        .rpc();
+    } catch (e) {
+      failed = true;
+      expect(e.message).toContain("Account is frozen");
+    }
+
+    expect(failed).toBeTruthy();
+
+    // unfreeze 
+    await program.methods
+      .unfreezeAccount()
+      .accounts({
+        authority: payer.publicKey,
+        frozenAccount: frozenAccountPda,
+        accountToFreeze: recipient.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([payer])
+      .rpc();
+    
+    // try transfer again
+    await program.methods
+      .transfer(transferAmount)
+      .accounts({
+        fromAuthority: recipient.publicKey,
+        fromAta: recipient_ata,
+        toAta: recipient2_ata,
+        mint: mintAccount.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        frozenAccount: frozenAccountPda,
+      })
+      .signers([recipient])
+      .rpc();
+    // check recipient2_ata's balance
+    const recipient2AtaInfo = await getAccount(connection, recipient2_ata);
+    expect(recipient2AtaInfo.amount.toString()).toEqual(transferAmount.toString());
   });
 })
