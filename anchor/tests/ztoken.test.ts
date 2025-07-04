@@ -259,4 +259,33 @@ describe('ztoken', () => {
     }
     expect(failed).toBeTruthy();
   });
+
+  it("should not allow unauthorized mint", async() => {
+    let failed = true;
+    const extraAmount = new BN(100);
+    const unauthorized = Keypair.generate();
+    const recipient_ata = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      recipient.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+    );
+    try {
+      await program.methods
+        .mintTo(extraAmount)
+        .accounts({
+          authority: unauthorized.publicKey,
+          mint: mintAccount.publicKey,
+          toAta: recipient_ata,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          tokenMetadata: tokenMetadata.publicKey,
+        })
+        .signers([unauthorized])
+        .rpc();
+    } catch (e) {
+      failed = true;
+      expect(e.message).toContain("Unauthorized");
+    }
+    expect(failed).toBeTruthy();
+  });
 })

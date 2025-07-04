@@ -23,6 +23,7 @@ pub mod ztoken {
         Ok(())
     }
 
+    // create a mint account
     pub fn create_mint(
         ctx: Context<CreateMint>,
         name: String,
@@ -108,6 +109,30 @@ pub mod ztoken {
 
         Ok(())
     }
+
+
+    // mint additional token
+    pub fn mint_to(ctx: Context<MintTo>, amount: u64) -> Result<()> {
+        // `authority` mint only
+        require_keys_eq!(ctx.accounts.authority.key(), ctx.accounts.token_metadata.authority, 
+            ErrorCode::Unauthorized);
+
+        token::mint_to(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::MintTo {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    to: ctx.accounts.to_ata.to_account_info(),
+                    authority: ctx.accounts.authority.to_account_info(),
+                }
+            ),
+            amount,
+        )?;
+
+        Ok(())
+    }
+
+
 }
 #[account]
 #[derive(InitSpace)]
@@ -236,4 +261,22 @@ pub struct Transfer<'info> {
 pub enum ErrorCode {
     #[msg("Insufficient funds for transfer")]
     InsufficientFunds,
+    #[msg("Unauthorized")]
+    Unauthorized,
+}
+
+#[derive(Accounts)]
+pub struct MintTo<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub to_ata: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+
+    pub token_metadata: Account<'info, TokenMetadata>,
+
 }
