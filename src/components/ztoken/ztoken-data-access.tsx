@@ -60,14 +60,25 @@ export function useZtokenInitializeMutation() {
 
   return useMutation({
     mutationFn: async () => {
-      const ztoken = await generateKeyPairSigner()
-      return await signAndSend(getInitializeInstruction({ payer: signer, ztoken }), signer)
+      if (!signer) {
+        throw new Error("Wallet not connected")
+      }
+      // Create a keypair for the token account
+      const keypairSigner = await generateKeyPairSigner()
+      
+      // Create the instruction with both signers
+      const instruction = getInitializeInstruction({ 
+        payer: signer,
+        ztoken: keypairSigner
+      })
+      
+      return await signAndSend(instruction, signer)
     },
     onSuccess: async (tx) => {
       toastTx(tx)
       await queryClient.invalidateQueries({ queryKey: ['ztoken', 'accounts', { cluster }] })
     },
-    onError: () => toast.error('Failed to run program'),
+    onError: (error) => toast.error(`Failed to run program: ${error instanceof Error ? error.message : String(error)}`),
   })
 }
 
@@ -77,11 +88,17 @@ export function useZtokenDecrementMutation({ ztoken }: { ztoken: ZtokenAccount }
   const signAndSend = useWalletTransactionSignAndSend()
 
   return useMutation({
-    mutationFn: async () => await signAndSend(getDecrementInstruction({ ztoken: ztoken.address }), signer),
+    mutationFn: async () => {
+      if (!signer) {
+        throw new Error("Wallet not connected")
+      }
+      return await signAndSend(getDecrementInstruction({ ztoken: ztoken.address }), signer)
+    },
     onSuccess: async (tx) => {
       toastTx(tx)
       await invalidateAccounts()
     },
+    onError: (error) => toast.error(`Failed to decrement: ${error instanceof Error ? error.message : String(error)}`),
   })
 }
 
@@ -91,11 +108,17 @@ export function useZtokenIncrementMutation({ ztoken }: { ztoken: ZtokenAccount }
   const signer = useWalletUiSigner()
 
   return useMutation({
-    mutationFn: async () => await signAndSend(getIncrementInstruction({ ztoken: ztoken.address }), signer),
+    mutationFn: async () => {
+      if (!signer) {
+        throw new Error("Wallet not connected")
+      }
+      return await signAndSend(getIncrementInstruction({ ztoken: ztoken.address }), signer)
+    },
     onSuccess: async (tx) => {
       toastTx(tx)
       await invalidateAccounts()
     },
+    onError: (error) => toast.error(`Failed to increment: ${error instanceof Error ? error.message : String(error)}`),
   })
 }
 
@@ -105,18 +128,23 @@ export function useZtokenSetMutation({ ztoken }: { ztoken: ZtokenAccount }) {
   const signer = useWalletUiSigner()
 
   return useMutation({
-    mutationFn: async (value: number) =>
-      await signAndSend(
+    mutationFn: async (value: number) => {
+      if (!signer) {
+        throw new Error("Wallet not connected")
+      }
+      return await signAndSend(
         getSetInstruction({
           ztoken: ztoken.address,
           value,
         }),
         signer,
-      ),
+      )
+    },
     onSuccess: async (tx) => {
       toastTx(tx)
       await invalidateAccounts()
     },
+    onError: (error) => toast.error(`Failed to set value: ${error instanceof Error ? error.message : String(error)}`),
   })
 }
 
@@ -127,12 +155,16 @@ export function useZtokenCloseMutation({ ztoken }: { ztoken: ZtokenAccount }) {
 
   return useMutation({
     mutationFn: async () => {
+      if (!signer) {
+        throw new Error("Wallet not connected")
+      }
       return await signAndSend(getCloseInstruction({ payer: signer, ztoken: ztoken.address }), signer)
     },
     onSuccess: async (tx) => {
       toastTx(tx)
       await invalidateAccounts()
     },
+    onError: (error) => toast.error(`Failed to close account: ${error instanceof Error ? error.message : String(error)}`),
   })
 }
 

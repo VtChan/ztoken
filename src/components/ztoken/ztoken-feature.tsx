@@ -2,50 +2,57 @@ import { ZtokenButtonInitialize, ZtokenList, ZtokenProgramExplorerLink, ZtokenPr
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
+import { useWalletUi } from '@wallet-ui/react'
+import { WalletButton } from '@/components/solana/solana-provider'
+import { LocalnetWarning } from '@/components/dev/LocalnetWarning'
 
 export function ZtokenFeature() {
+  const { account, cluster } = useWalletUi()
+  const isLocalnet = cluster?.id === 'solana:localnet';
+
+  // Display connect wallet button if wallet is not connected
+  if (!account || !cluster) {
+    return (
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Connect your wallet</CardTitle>
+            <CardDescription>
+              Please connect your wallet to use the ZToken Program
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <WalletButton />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto py-6">
-      <Card className="mb-4">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>ZToken Program</CardTitle>
-            <CardDescription>
-              Program ID: <ZtokenProgramExplorerLink />
-            </CardDescription>
-          </div>
-        </CardHeader>
-      </Card>
-
-      <Tabs defaultValue="counter" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="counter">Counter Demo</TabsTrigger>
-          <TabsTrigger value="token">Token Manager</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="counter" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Counter Demo</CardTitle>
-              <CardDescription>Initialize and interact with counter accounts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-5 flex justify-center">
-                <ZtokenButtonInitialize />
-              </div>
-              <ZtokenProgramGuard>
-                <ZtokenList />
-              </ZtokenProgramGuard>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="token" className="pt-4">
-          <ZtokenProgramGuard>
+      {/* Show LocalnetWarning when using localnet */}
+      {isLocalnet && <LocalnetWarning />}
+      
+      <ZtokenProgramGuard>
+        <ZtokenProgramExplorerLink />
+        <Tabs defaultValue="token">
+          <TabsList className="mb-2">
+            <TabsTrigger value="token">Token</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="initialize">Initialize</TabsTrigger>
+          </TabsList>
+          <TabsContent value="token">
             <TokenFeature />
-          </ZtokenProgramGuard>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+          <TabsContent value="list">
+            <ZtokenList />
+          </TabsContent>
+          <TabsContent value="initialize">
+            <ZtokenButtonInitialize />
+          </TabsContent>
+        </Tabs>
+      </ZtokenProgramGuard>
     </div>
   )
 }

@@ -22,7 +22,7 @@ import {
 } from '../instructions';
 
 export const ZTOKEN_PROGRAM_ADDRESS =
-  'JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H' as Address<'JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H'>;
+  'Ck8SAyDHXhPfY1R74mXD5muGtzzmFVzNgbjJBsKZvBdb' as Address<'Ck8SAyDHXhPfY1R74mXD5muGtzzmFVzNgbjJBsKZvBdb'>;
 
 export enum ZtokenAccount {
   Ztoken,
