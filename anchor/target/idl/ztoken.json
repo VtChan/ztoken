@@ -235,6 +235,57 @@
       "args": []
     },
     {
+      "name": "freeze_account",
+      "discriminator": [
+        253,
+        75,
+        82,
+        133,
+        167,
+        238,
+        43,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "frozen_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  114,
+                  111,
+                  122,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "account_to_freeze"
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_to_freeze"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -263,6 +314,46 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "mint_to",
+      "discriminator": [
+        241,
+        34,
+        48,
+        186,
+        37,
+        179,
+        123,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "to_ata",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "token_metadata"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "transfer",
@@ -300,6 +391,10 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "frozen_account",
+          "optional": true
         }
       ],
       "args": [
@@ -308,9 +403,73 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "unfreeze_account",
+      "discriminator": [
+        28,
+        255,
+        156,
+        206,
+        139,
+        228,
+        5,
+        213
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "frozen_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  114,
+                  111,
+                  122,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "account_to_freeze"
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_to_freeze"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "FrozenAccount",
+      "discriminator": [
+        158,
+        228,
+        34,
+        188,
+        28,
+        83,
+        228,
+        244
+      ]
+    },
     {
       "name": "TokenMetadata",
       "discriminator": [
@@ -343,9 +502,35 @@
       "code": 6000,
       "name": "InsufficientFunds",
       "msg": "Insufficient funds for transfer"
+    },
+    {
+      "code": 6001,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6002,
+      "name": "AccountFrozen",
+      "msg": "Account is frozen"
     }
   ],
   "types": [
+    {
+      "name": "FrozenAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "account",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_frozen",
+            "type": "bool"
+          }
+        ]
+      }
+    },
     {
       "name": "TokenMetadata",
       "type": {

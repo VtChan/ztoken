@@ -241,6 +241,57 @@ export type Ztoken = {
       "args": []
     },
     {
+      "name": "freezeAccount",
+      "discriminator": [
+        253,
+        75,
+        82,
+        133,
+        167,
+        238,
+        43,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "frozenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  114,
+                  111,
+                  122,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "accountToFreeze"
+              }
+            ]
+          }
+        },
+        {
+          "name": "accountToFreeze"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -269,6 +320,46 @@ export type Ztoken = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "mintTo",
+      "discriminator": [
+        241,
+        34,
+        48,
+        186,
+        37,
+        179,
+        123,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "toAta",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "tokenMetadata"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "transfer",
@@ -306,6 +397,10 @@ export type Ztoken = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "frozenAccount",
+          "optional": true
         }
       ],
       "args": [
@@ -314,9 +409,73 @@ export type Ztoken = {
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "unfreezeAccount",
+      "discriminator": [
+        28,
+        255,
+        156,
+        206,
+        139,
+        228,
+        5,
+        213
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "frozenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  114,
+                  111,
+                  122,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "accountToFreeze"
+              }
+            ]
+          }
+        },
+        {
+          "name": "accountToFreeze"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "frozenAccount",
+      "discriminator": [
+        158,
+        228,
+        34,
+        188,
+        28,
+        83,
+        228,
+        244
+      ]
+    },
     {
       "name": "tokenMetadata",
       "discriminator": [
@@ -349,9 +508,35 @@ export type Ztoken = {
       "code": 6000,
       "name": "insufficientFunds",
       "msg": "Insufficient funds for transfer"
+    },
+    {
+      "code": 6001,
+      "name": "unauthorized",
+      "msg": "unauthorized"
+    },
+    {
+      "code": 6002,
+      "name": "accountFrozen",
+      "msg": "Account is frozen"
     }
   ],
   "types": [
+    {
+      "name": "frozenAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "account",
+            "type": "pubkey"
+          },
+          {
+            "name": "isFrozen",
+            "type": "bool"
+          }
+        ]
+      }
+    },
     {
       "name": "tokenMetadata",
       "type": {

@@ -6,6 +6,7 @@
     "anchor-client": "esrun ./anchor/src/generate-client.ts",
     "anchor-localnet": "cd anchor && anchor localnet",
     "anchor-test": "cd anchor && anchor test",
+    "anchor-test-skip": "cd anchor && anchor test --skip-local-validator --skip-deploy",
     "build": "next build",
     "codama:js": "codama run -c ./anchor/codama.js js",
     "ci": "npm run build && npm run lint && npm run format:check && npm run codama:js",

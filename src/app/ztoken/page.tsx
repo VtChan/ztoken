@@ -1,6 +1,6 @@
 'use client'
-import ZtokenFeature from '@/components/ztoken/ztoken-feature'
+import { ZtokenFeature } from '@/components/ztoken/ztoken-feature'
 
-export default function Page() {
+export default function TokenPage() {
   return <ZtokenFeature />
 }

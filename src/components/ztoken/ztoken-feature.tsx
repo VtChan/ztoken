@@ -1,33 +1,51 @@
-import { WalletButton } from '../solana/solana-provider'
-import { ZtokenButtonInitialize, ZtokenList, ZtokenProgramExplorerLink, ZtokenProgramGuard } from './ztoken-ui'
-import { AppHero } from '../app-hero'
-import { useWalletUi } from '@wallet-ui/react'
+import { ZtokenButtonInitialize, ZtokenList, ZtokenProgramExplorerLink, ZtokenProgramGuard, TokenFeature } from './ztoken-ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState } from 'react'
 
-export default function ZtokenFeature() {
-  const { account } = useWalletUi()
-
+export function ZtokenFeature() {
   return (
-    <ZtokenProgramGuard>
-      <AppHero
-        title="Ztoken"
-        subtitle={
-          account
-            ? "Initialize a new ztoken onchain by clicking the button. Use the program's methods (increment, decrement, set, and close) to change the state of the account."
-            : 'Select a wallet to run the program.'
-        }
-      >
-        <p className="mb-6">
-          <ZtokenProgramExplorerLink />
-        </p>
-        {account ? (
-          <ZtokenButtonInitialize />
-        ) : (
-          <div style={{ display: 'inline-block' }}>
-            <WalletButton />
+    <div className="container mx-auto py-6">
+      <Card className="mb-4">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>ZToken Program</CardTitle>
+            <CardDescription>
+              Program ID: <ZtokenProgramExplorerLink />
+            </CardDescription>
           </div>
-        )}
-      </AppHero>
-      {account ? <ZtokenList /> : null}
-    </ZtokenProgramGuard>
+        </CardHeader>
+      </Card>
+
+      <Tabs defaultValue="counter" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="counter">Counter Demo</TabsTrigger>
+          <TabsTrigger value="token">Token Manager</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="counter" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Counter Demo</CardTitle>
+              <CardDescription>Initialize and interact with counter accounts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-5 flex justify-center">
+                <ZtokenButtonInitialize />
+              </div>
+              <ZtokenProgramGuard>
+                <ZtokenList />
+              </ZtokenProgramGuard>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="token" className="pt-4">
+          <ZtokenProgramGuard>
+            <TokenFeature />
+          </ZtokenProgramGuard>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
