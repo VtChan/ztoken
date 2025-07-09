@@ -65,7 +65,12 @@ pub mod ztoken {
         token_metadata.decimals = decimals;
         token_metadata.mint = ctx.accounts.mint.key();
         token_metadata.authority = ctx.accounts.payer.key();
+        token_metadata.id = ctx.accounts.ztoken.count;
+        ctx.accounts.ztoken.count += 1;
+        Ok(())
+    }
 
+    pub fn get_token_metadata_pda(_ctx: Context<GetTokenMetadataPda>, _id: u64) -> Result<()> {
         Ok(())
     }
 
@@ -154,7 +159,7 @@ pub mod ztoken {
 #[account]
 #[derive(InitSpace)]
 pub struct Ztoken {
-    pub count: u8
+    pub count: u64
 }
 
 #[account]
@@ -173,6 +178,8 @@ pub struct Initialize<'info> {
         init,
         payer = payer,
         space = 8 + Ztoken::INIT_SPACE,
+        seeds = [b"ztoken"],
+        bump,
     )]
     pub ztoken: Account<'info, Ztoken>,
 
@@ -189,6 +196,7 @@ pub struct TokenMetadata {
     pub decimals: u8,
     pub mint: Pubkey,
     pub authority: Pubkey,
+    pub id: u64,
 }
 
 #[derive(Accounts)]
@@ -216,13 +224,33 @@ pub struct CreateMint<'info> {
         init,
         payer = payer,
         space = 8 + TokenMetadata::INIT_SPACE,
+        seeds = [b"metadata", ztoken.count.to_le_bytes().as_ref()],
+        bump,
     )]
     pub token_metadata: Account<'info, TokenMetadata>,
+
+    #[account(
+        mut,
+        seeds = [b"ztoken"],
+        bump,
+    )]
+    pub ztoken: Account<'info, Ztoken>,
 
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(id: u64)]
+pub struct GetTokenMetadataPda<'info> {
+    #[account(
+        seeds = [b"metadata", id.to_le_bytes().as_ref()],
+        bump,
+    )]
+    pub token_metadata: Account<'info, TokenMetadata>,
+    
 }
 
 

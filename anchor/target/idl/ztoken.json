@@ -1,5 +1,5 @@
 {
-  "address": "Ck8SAyDHXhPfY1R74mXD5muGtzzmFVzNgbjJBsKZvBdb",
+  "address": "JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H",
   "metadata": {
     "name": "ztoken",
     "version": "0.1.0",
@@ -67,7 +67,47 @@
         {
           "name": "token_metadata",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "ztoken.count",
+                "account": "Ztoken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ztoken",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  122,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "token_program",
@@ -286,6 +326,51 @@
       "args": []
     },
     {
+      "name": "get_token_metadata_pda",
+      "discriminator": [
+        251,
+        226,
+        95,
+        254,
+        190,
+        128,
+        31,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "token_metadata",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "id"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -306,7 +391,21 @@
         {
           "name": "ztoken",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  122,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "system_program",
@@ -555,6 +654,10 @@
           {
             "name": "authority",
             "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u64"
           }
         ]
       }
@@ -566,7 +669,7 @@
         "fields": [
           {
             "name": "count",
-            "type": "u8"
+            "type": "u64"
           }
         ]
       }

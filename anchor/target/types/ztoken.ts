@@ -73,7 +73,47 @@ export type Ztoken = {
         {
           "name": "tokenMetadata",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "ztoken.count",
+                "account": "ztoken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ztoken",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  122,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "tokenProgram",
@@ -292,6 +332,51 @@ export type Ztoken = {
       "args": []
     },
     {
+      "name": "getTokenMetadataPda",
+      "discriminator": [
+        251,
+        226,
+        95,
+        254,
+        190,
+        128,
+        31,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "tokenMetadata",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "id"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -312,7 +397,21 @@ export type Ztoken = {
         {
           "name": "ztoken",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  122,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "systemProgram",
@@ -561,6 +660,10 @@ export type Ztoken = {
           {
             "name": "authority",
             "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u64"
           }
         ]
       }
@@ -572,7 +675,7 @@ export type Ztoken = {
         "fields": [
           {
             "name": "count",
-            "type": "u8"
+            "type": "u64"
           }
         ]
       }

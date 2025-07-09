@@ -35,18 +35,36 @@ describe('ztoken', () => {
   // Create accounts needed for the test
   const mintAccount = Keypair.generate();
   const tokenAccount = Keypair.generate();
-  const tokenMetadata = Keypair.generate();
+  // const tokenMetadata = Keypair.generate();
   const amount = new BN(1000);
 
   // recipient
   const recipient = Keypair.generate();
 
-  async function createMintFixture() {
+  let tokenMetadataPda: PublicKey;
+
+  async function createMintFixture(
+    name: string,
+    symbol: string,
+    mint: Keypair,
+    token: Keypair,
+  ) {
     
     // Create instruction data with valid parameters
-    const name = "Test Mint";
-    const symbol = "TST";
     const decimals = 6;
+
+    const [ztokenPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("ztoken")],
+      program.programId
+    );
+
+    const ztokenAccount = await program.account.ztoken.fetch(ztokenPda);
+    const tokenId = ztokenAccount.count;
+
+    const [metadataPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("metadata"), tokenId.toBuffer('le', 8)],
+      program.programId
+    );
 
     // Create and send transaction
     await program.methods
@@ -58,25 +76,47 @@ describe('ztoken', () => {
     )
     .accounts({
       payer: payer.publicKey,
-      mint: mintAccount.publicKey,
-      tokenAccount: tokenAccount.publicKey,
-      tokenMetadata: tokenMetadata.publicKey,
+      mint: mint.publicKey,
+      tokenAccount: token.publicKey,
+      tokenMetadata: metadataPda,
+      ztoken: ztokenPda,
       tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
       rent: SYSVAR_RENT_PUBKEY,
     })
-    .signers([mintAccount, tokenAccount, tokenMetadata])
+    .signers([mint, token])
     .rpc();
 
-    return { mintAccount, tokenAccount, tokenMetadata };
+    return { metadataPda };
   }
 
+  it("should initialize", async() => {
+    const [ztokenPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("ztoken")],
+      program.programId
+    );
 
+    await program.methods
+    .initialize()
+    .accounts({
+      payer: payer.publicKey,
+      ztoken: ztokenPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+
+    const ztokenAccount = await program.account.ztoken.fetch(ztokenPda);
+    expect(ztokenAccount.count.toNumber()).toEqual(0);
+  });
   
 
   it("can create a token mint", async() => {
-    const { mintAccount, tokenAccount, tokenMetadata } = await createMintFixture();
-    const { name, symbol, decimals } = await program.account.tokenMetadata.fetch(tokenMetadata.publicKey);
+    const name = "Test Mint";
+    const symbol = "TST";
+    const decimals = 6;
+    const { metadataPda } = await createMintFixture(name, symbol, mintAccount, tokenAccount);
+    // const { name, symbol, decimals } = await program.account.tokenMetadata.fetch(tokenMetadata.publicKey);
+    tokenMetadataPda = metadataPda;
 
     // Verify mint was created
     const mintInfo = await getMint(connection, mintAccount.publicKey);
@@ -89,12 +129,50 @@ describe('ztoken', () => {
     expect(tokenAccountInfo.amount.toString()).toEqual(amount.toString());
 
     // Verify token metadata
-    const metadata = await program.account.tokenMetadata.fetch(tokenMetadata.publicKey);
+    const metadata = await program.account.tokenMetadata.fetch(tokenMetadataPda);
     expect(metadata.name).toEqual(name);
     expect(metadata.symbol).toEqual(symbol);
     expect(metadata.decimals).toEqual(decimals);
     expect(metadata.mint.toBase58()).toEqual(mintAccount.publicKey.toBase58());
     expect(metadata.authority.toBase58()).toEqual(payer.publicKey.toBase58());
+    expect(metadata.id.toNumber()).toEqual(0);
+
+  });
+
+  it("can get token metadata list", async() => {
+    const tokenCount = 3;
+    for (let i = 0; i < tokenCount; i++) {
+      const mint = Keypair.generate();
+      const token = Keypair.generate();
+      await createMintFixture(`Token ${i + 1}`, `TK${i + 1}`, mint, token);
+    }
+
+    const [ztokenPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("ztoken")],
+      program.programId
+    );
+
+    const ztoken = await program.account.ztoken.fetch(ztokenPda);
+    const totalTokens = ztoken.count.toNumber();
+    expect(totalTokens).toEqual(tokenCount + 1);
+
+    for (let i = 0; i < totalTokens; i++) {
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("metadata"), new BN(i).toBuffer('le', 8)],
+        program.programId
+      );
+
+      await program.methods
+        .getTokenMetadataPda(new BN(i))
+        .accounts({
+          tokenMetadata: metadataPda,
+        })
+        .rpc();
+      const metadata = await program.account.tokenMetadata.fetch(metadataPda);
+      expect(metadata.id.toNumber()).toEqual(i);
+      console.log(`Fetched metadata for token ${i}:`, metadata.name);
+      
+    }
   });
 
   it("can create or get an ata", async() => {
@@ -279,7 +357,7 @@ describe('ztoken', () => {
           mint: mintAccount.publicKey,
           toAta: recipient_ata,
           tokenProgram: TOKEN_PROGRAM_ID,
-          tokenMetadata: tokenMetadata.publicKey,
+          tokenMetadata: tokenMetadataPda,
         })
         .signers([unauthorized])
         .rpc();
